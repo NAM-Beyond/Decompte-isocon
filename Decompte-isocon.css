@@ -13,3 +13,9 @@ table, tr, td {
     border-collapse: collapse;
     text-align: center;
 }
+button {
+    padding-left: 10px;
+    padding-right: 10px;
+    border-radius: 12px;
+    background-color: #FFFF96;
+}
