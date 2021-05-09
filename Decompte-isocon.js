@@ -24,6 +24,10 @@ window.onload = function RemoveFuckingUselessEmptyTextNodes() {
         }
     }
 }
+  function CheckTime(i) {
+    if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
+    return i;
+  }
 /* Function to enlight the button your mouse is over */
 function Light(LineId, ButtonFontColor, ButtonBackgroundColor) {
     document.getElementById(LineId).childNodes[0].childNodes[0].style.color = ButtonFontColor;
@@ -64,4 +68,14 @@ function AddNewButton(TableId) {
     NewButton.setAttribute("onmouseout", "Light('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "', '#000000', '#FFFF96')");
     NewButton.innerHTML = "+";
     document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].appendChild(NewButton);
+}
+function SetStart(LineId, Time) {
+    var NewTime = Time.split(/[-:T]/);
+    StartCount(NewTime);
+    function StartCount() {
+        var Today = new Date();
+        NewMinutes =  CheckTime(Today.getMinutes()) - NewTime[4];
+        document.getElementById(LineId).childNodes[2].innerText = NewMinutes;
+        var t = setTimeout(StartCount, 1000);
+    }
 }

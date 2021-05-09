@@ -19,7 +19,7 @@
       </tr>
       <tr id="011">
         <td><button onclick="AddInputField('01')" onmouseover="Light('011', '#FFFFFF', '#0099FF')" onmouseout="Light('011', '#000000', '#FFFF96')">+</button></td>
-        <td></td>
+        <td><input type="datetime-local" onblur="SetStart('011', document.getElementById('011').childNodes[1].childNodes[0].value)"></td>
         <td></td>
         <td></td>
       </tr>
@@ -35,7 +35,7 @@
       </tr>
       <tr id="021">
         <td><button onclick="AddInputField('02')" onmouseover="Light('021', '#FFFFFF', '#0099FF')" onmouseout="Light('021', '#000000', '#FFFF96')">+</button></td>
-        <td></td>
+        <td><input type="datetime-local" onblur="SetStart('021', document.getElementById('021').childNodes[1].childNodes[0].value)"></td>
         <td></td>
         <td></td>
       </tr>
