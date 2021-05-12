@@ -1,3 +1,5 @@
+var Months = [31,28,31,30,31,30,31,31,30,31,30,31];
+if (new Date().getFullYear() % 4 == 0) {Months[1] = 29;}
 /* No need to explain that one */
 window.onload = function RemoveFuckingUselessEmptyTextNodes() {
     for (w = 1; w < 3; w++) {
@@ -24,10 +26,10 @@ window.onload = function RemoveFuckingUselessEmptyTextNodes() {
         }
     }
 }
-  function CheckTime(i) {
-    if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
+/*function CheckTime(i) {
+    if (i < 10) {i = "0" + i};
     return i;
-  }
+}*/
 /* Function to enlight the button your mouse is over */
 function Light(LineId, ButtonFontColor, ButtonBackgroundColor) {
     document.getElementById(LineId).childNodes[0].childNodes[0].style.color = ButtonFontColor;
@@ -71,11 +73,43 @@ function AddNewButton(TableId) {
 }
 function SetStart(LineId, Time) {
     var NewTime = Time.split(/[-:T]/);
-    StartCount(NewTime);
-    function StartCount() {
-        var Today = new Date();
-        NewMinutes =  CheckTime(Today.getMinutes()) - NewTime[4];
-        document.getElementById(LineId).childNodes[2].innerText = NewMinutes;
-        var t = setTimeout(StartCount, 1000);
+    var Today = new Date();
+    if (Today.getMinutes() < NewTime[4]) {
+        NewTime[4] = NewTime[4] - 60;
+        NewTime[3] += 1;
     }
+    if (Today.getHours() < NewTime[3]) {
+        NewTime[3] = NewTime[3] - 24;
+        NewTime[2] += 1;
+    }
+    if (Today.getDay() < NewTime[2]) {
+        NewTime[2] = NewTime[2] - Months[NewTime[2] - 1];
+        NewTime[1] += 1;
+    }
+    if (Today.getDay() < NewTime[1]) {
+        NewTime[1] = NewTime[1] - 12;
+        NewTime[0] += 1;
+    }
+    if (Today.getFullYear() < NewTime[0]) {
+        NewTime[0] = NewTime[1] - 100;
+    }
+    NewMinutes = Today.getMinutes() - NewTime[4];
+    NewHours = Today.getHours() - NewTime[3];
+    NewDay = Today.getDay() - NewTime[2];
+    NewMonth = Today.getMonth() - NewTime[1];
+    NewYear = Today.getFullYear() - NewTime[0];
+    document.getElementById(LineId).childNodes[2].innerText = NewHours + " heures " + NewMinutes + " minutes";
+    NewMinutes -= 1;
+    StartCount(LineId, NewHours, NewMinutes);
+}
+function StartCount(LineId, NewHours, NewMinutes) {
+    NewMinutes += 1;
+    if (NewMinutes == 60) {
+        NewMinutes = 00;
+        NewHours += 1; 
+    }
+    document.getElementById(LineId).childNodes[2].innerText = NewHours + " heures " + NewMinutes + " minutes";
+    var timecount = setTimeout(function() {
+        StartCount(LineId, NewHours, NewMinutes);
+    }, 60000);
 }
