@@ -26,10 +26,6 @@ window.onload = function RemoveFuckingUselessEmptyTextNodes() {
         }
     }
 }
-/*function CheckTime(i) {
-    if (i < 10) {i = "0" + i};
-    return i;
-}*/
 /* Function to enlight the button your mouse is over */
 function Light(LineId, ButtonFontColor, ButtonBackgroundColor) {
     document.getElementById(LineId).childNodes[0].childNodes[0].style.color = ButtonFontColor;
@@ -42,9 +38,9 @@ function AddInputField(TableId) {
     NewField.type = "text";
     NewField.setAttribute("onkeypress", "AddNewName(event, '" + TableId + "')");
     document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].appendChild(NewField);
-    NewField.setAttribute("onblur", "AddNewButton('" + TableId + "', 0)");
+    NewField.setAttribute("onblur", "AddNewButton('" + TableId + "')");
 }
-/* Function of the keyboard event listener, an input is add only if the user press enter and then add a new name and a new line*/
+/* Function of the keyboard event listener, an input is add only if the user press enter and then add a new name, a time start option and then a new line*/
 function AddNewName(event, TableId) {
     y = event.which || event.keyCode;
     if (y == 13) {
@@ -52,6 +48,10 @@ function AddNewName(event, TableId) {
         NewName = document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].childNodes[0].value;
         document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].innerHTML = "";
         document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].innerText = NewName;
+        NewTimeInput = document.createElement("input");
+        NewTimeInput.setAttribute("type", "datetime-local");
+        NewTimeInput.setAttribute("onblur", "SetStart('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "', document.getElementById('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "').childNodes[1].childNodes[0].value)");
+        document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[1].appendChild(NewTimeInput);
         NewLine = document.createElement("tr");
         NewLine.id = TableId + (document.getElementById(TableId).childNodes[0].childNodes.length);
         document.getElementById(TableId).childNodes[0].appendChild(NewLine);
@@ -71,8 +71,9 @@ function AddNewButton(TableId) {
     NewButton.innerHTML = "+";
     document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].appendChild(NewButton);
 }
+/* Function that sets the already cumulated time considering the beginning set by the user */
 function SetStart(LineId, Time) {
-    var NewTime = Time.split(/[-:T]/);
+    var NewTime = Time.split(/[-:T]/).map(Number);
     var Today = new Date();
     if (Today.getMinutes() < NewTime[4]) {
         NewTime[4] = NewTime[4] - 60;
@@ -82,11 +83,11 @@ function SetStart(LineId, Time) {
         NewTime[3] = NewTime[3] - 24;
         NewTime[2] += 1;
     }
-    if (Today.getDay() < NewTime[2]) {
+    if (Today.getDate() < NewTime[2]) {
         NewTime[2] = NewTime[2] - Months[NewTime[2] - 1];
         NewTime[1] += 1;
     }
-    if (Today.getDay() < NewTime[1]) {
+    if (Today.getMonth() + 1 < NewTime[1]) {
         NewTime[1] = NewTime[1] - 12;
         NewTime[0] += 1;
     }
@@ -95,13 +96,19 @@ function SetStart(LineId, Time) {
     }
     NewMinutes = Today.getMinutes() - NewTime[4];
     NewHours = Today.getHours() - NewTime[3];
-    NewDay = Today.getDay() - NewTime[2];
-    NewMonth = Today.getMonth() - NewTime[1];
+    NewDay = Today.getDate() - NewTime[2];
+    NewMonth = Today.getMonth() +1 - NewTime[1];
     NewYear = Today.getFullYear() - NewTime[0];
+    NewHours = NewHours + NewDay * 24 + NewMonth * 30 * 24 + NewYear * 365 * 24;
     document.getElementById(LineId).childNodes[2].innerText = NewHours + " heures " + NewMinutes + " minutes";
+    PauseButton = document.createElement("button");
+    PauseButton.setAttribute("onclick", "SetPause('" + LineId + "')");
+    PauseButton.innerHTML = "&#9208;";
+    document.getElementById(LineId).childNodes[1].appendChild(PauseButton);
     NewMinutes -= 1;
     StartCount(LineId, NewHours, NewMinutes);
 }
+/* Function that ensure the counting */
 function StartCount(LineId, NewHours, NewMinutes) {
     NewMinutes += 1;
     if (NewMinutes == 60) {
@@ -109,7 +116,21 @@ function StartCount(LineId, NewHours, NewMinutes) {
         NewHours += 1; 
     }
     document.getElementById(LineId).childNodes[2].innerText = NewHours + " heures " + NewMinutes + " minutes";
-    var timecount = setTimeout(function() {
+    window[LineId] = setTimeout(function() {
         StartCount(LineId, NewHours, NewMinutes);
-    }, 60000);
+    }, 100);
+}
+/* Function that ensure the pause of the counting and set a restart option */
+function SetPause(LineId) {
+    clearTimeout(window[LineId]);
+    document.getElementById(LineId).childNodes[1].childNodes[1].innerHTML = "&#9654;";
+    document.getElementById(LineId).childNodes[1].childNodes[1].setAttribute("onclick", "Restart('" + LineId + "')");
+}
+/* Function that handles the restart an set again a pause option */
+function Restart(LineId) {
+    document.getElementById(LineId).childNodes[1].childNodes[1].innerHTML = "&#9208;";
+    document.getElementById(LineId).childNodes[1].childNodes[1].setAttribute("onclick", "SetPause('" + LineId + "')");
+    NewHours = parseInt(document.getElementById(LineId).childNodes[2].innerText.match(/\d+/g)[0]);
+    NewMinutes = parseInt(document.getElementById(LineId).childNodes[2].innerText.match(/\d+/g)[1]) - 1;
+    StartCount(LineId, NewHours, NewMinutes);
 }
