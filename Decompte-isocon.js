@@ -50,7 +50,7 @@ function AddNewName(event, TableId) {
         document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].innerText = NewName;
         NewTimeInput = document.createElement("input");
         NewTimeInput.setAttribute("type", "datetime-local");
-        NewTimeInput.setAttribute("onblur", "SetStart('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "', document.getElementById('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "').childNodes[1].childNodes[0].value)");
+        NewTimeInput.setAttribute("onblur", "SetCumulatedTime('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "', document.getElementById('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "').childNodes[1].childNodes[0].value)");
         document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[1].appendChild(NewTimeInput);
         NewLine = document.createElement("tr");
         NewLine.id = TableId + (document.getElementById(TableId).childNodes[0].childNodes.length);
@@ -72,41 +72,65 @@ function AddNewButton(TableId) {
     document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].appendChild(NewButton);
 }
 /* Function that sets the already cumulated time considering the beginning set by the user */
-function SetStart(LineId, Time) {
-    var NewTime = Time.split(/[-:T]/).map(Number);
-    var Today = new Date();
-    if (Today.getMinutes() < NewTime[4]) {
-        NewTime[4] = NewTime[4] - 60;
-        NewTime[3] += 1;
+function SetCumulatedTime(LineId, StartTime, SecondTime = 0) {
+    if (typeof StartTime === "string") {
+        var FirstTime = StartTime.split(/[-:T]/).map(Number);
     }
-    if (Today.getHours() < NewTime[3]) {
-        NewTime[3] = NewTime[3] - 24;
-        NewTime[2] += 1;
+    else {
+        var FirstTime = StartTime;
     }
-    if (Today.getDate() < NewTime[2]) {
-        NewTime[2] = NewTime[2] - Months[NewTime[2] - 1];
-        NewTime[1] += 1;
+    if (SecondTime == 0) {
+        var RightNow = new Date();
+        SecondTime = new Array(6);
+        SecondTime[0] = RightNow.getFullYear();
+        SecondTime[1] = RightNow.getMonth() + 1;
+        SecondTime[2] = RightNow.getDate();
+        SecondTime[3] = RightNow.getHours();
+        SecondTime[4] = RightNow.getMinutes();
+        SecondTime[5] = RightNow.getSeconds();
     }
-    if (Today.getMonth() + 1 < NewTime[1]) {
-        NewTime[1] = NewTime[1] - 12;
-        NewTime[0] += 1;
+    if (FirstTime.length == 1) {
+        alert("Erreur : pas de date définie");
+        return;
     }
-    if (Today.getFullYear() < NewTime[0]) {
-        NewTime[0] = NewTime[1] - 100;
+    if ((SecondTime[0] < FirstTime[0]) || (SecondTime[1] < FirstTime[1] && SecondTime[0] <= FirstTime[0]) || (SecondTime[2] < FirstTime[2] && SecondTime[1] <= FirstTime[1] && SecondTime[0] <= FirstTime[0]) || (SecondTime[3] < FirstTime[3] && SecondTime[2] <= FirstTime[2] && SecondTime[1] <= FirstTime[1] && SecondTime[0] <= FirstTime[0]) || (SecondTime[4] < FirstTime[4] && SecondTime[3] <= FirstTime[3] && SecondTime[2] <= FirstTime[2] && SecondTime[1] <= FirstTime[1] && SecondTime[0] <= FirstTime[0])) {
+        alert("Date désignée dans le futur Marty ! Choisis-en une autre.");
+        return;
     }
-    NewMinutes = Today.getMinutes() - NewTime[4];
-    NewHours = Today.getHours() - NewTime[3];
-    NewDay = Today.getDate() - NewTime[2];
-    NewMonth = Today.getMonth() +1 - NewTime[1];
-    NewYear = Today.getFullYear() - NewTime[0];
+    NewMinutes = SecondTime[4] - FirstTime[4];
+    NewHours = SecondTime[3] - FirstTime[3];
+    NewDay = SecondTime[2] - FirstTime[2];
+    NewMonth = SecondTime[1] - FirstTime[1];
+    NewYear = SecondTime[0] - FirstTime[0];
+    if (NewMinutes < 0) {
+        NewMinutes += 60;
+        NewHours -= 1;
+    }
+    if (NewHours < 0) {
+        NewHours += 24;
+        NewDay -= 1;
+    }
+    if (NewDay < 0) {
+        NewDay += Months[FirstTime[1] - 1];
+        NewMonth -= 1;
+    }
+    if (NewMonth < 0) {
+        NewMonth += 12;
+        NewYear -= 1;
+    }
+    if (NewYear < 0) {
+        NewYear += 100;
+    }
     NewHours = NewHours + NewDay * 24 + NewMonth * 30 * 24 + NewYear * 365 * 24;
     document.getElementById(LineId).childNodes[2].innerText = NewHours + " heures " + NewMinutes + " minutes";
-    PauseButton = document.createElement("button");
-    PauseButton.setAttribute("onclick", "SetPause('" + LineId + "')");
-    PauseButton.innerHTML = "&#9208;";
-    document.getElementById(LineId).childNodes[1].appendChild(PauseButton);
-    NewMinutes -= 1;
-    StartCount(LineId, NewHours, NewMinutes);
+    if (SecondTime[5] != undefined) {
+        NewMinutes -= 1;
+        document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "SetPause('" + LineId + "', '" + FirstTime + "')");
+        StartCount(LineId, NewHours, NewMinutes);
+    }
+    else {
+        document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "Restart('" + LineId + "')");
+    }
 }
 /* Function that ensure the counting */
 function StartCount(LineId, NewHours, NewMinutes) {
@@ -121,16 +145,34 @@ function StartCount(LineId, NewHours, NewMinutes) {
     }, 100);
 }
 /* Function that ensure the pause of the counting and set a restart option */
-function SetPause(LineId) {
+function SetPause(LineId, StartTime) {
     clearTimeout(window[LineId]);
-    document.getElementById(LineId).childNodes[1].childNodes[1].innerHTML = "&#9654;";
-    document.getElementById(LineId).childNodes[1].childNodes[1].setAttribute("onclick", "Restart('" + LineId + "')");
+    PauseTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/).map(Number);
+    console.log(PauseTime);
+    SetCumulatedTime(LineId, StartTime, PauseTime);
 }
 /* Function that handles the restart an set again a pause option */
 function Restart(LineId) {
-    document.getElementById(LineId).childNodes[1].childNodes[1].innerHTML = "&#9208;";
-    document.getElementById(LineId).childNodes[1].childNodes[1].setAttribute("onclick", "SetPause('" + LineId + "')");
     NewHours = parseInt(document.getElementById(LineId).childNodes[2].innerText.match(/\d+/g)[0]);
     NewMinutes = parseInt(document.getElementById(LineId).childNodes[2].innerText.match(/\d+/g)[1]) - 1;
-    StartCount(LineId, NewHours, NewMinutes);
+    RestartTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/).map(Number);
+    RestartTime[4] = RestartTime[4] + NewMinutes;
+    if (RestartTime[4] >= 60) {
+        RestartTime[4] = RestartTime[4] - 60;
+        RestartTime[3] += 1;
+    }
+    RestartTime[3] = RestartTime[3] + NewHours;
+    if (RestartTime[3] >= 24) {
+        RestartTime[3] = RestartTime[3] - 24;
+        RestartTime[2] += 1;
+    }
+    if (RestartTime[2] > Months[RestartTime[1] - 1]) {
+        RestartTime[2] = RestartTime[2] - Months[RestartTime[1] - 1];
+        RestartTime[1] += 1;
+    }
+    if (RestartTime[1] > 12) {
+        RestartTime[1] = RestartTime[1] - 12;
+        RestartTime[0] += 1;
+    }
+    document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "SetCumulatedTime('" + LineId + "', '" + RestartTime + "')");
 }
