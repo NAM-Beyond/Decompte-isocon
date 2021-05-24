@@ -118,14 +118,11 @@ function SetCumulatedTime(LineId, StartTime, SecondTime = 0) {
         NewMonth += 12;
         NewYear -= 1;
     }
-    if (NewYear < 0) {
-        NewYear += 100;
-    }
     NewHours = NewHours + NewDay * 24 + NewMonth * 30 * 24 + NewYear * 365 * 24;
     document.getElementById(LineId).childNodes[2].innerText = NewHours + " heures " + NewMinutes + " minutes";
     if (SecondTime[5] != undefined) {
         NewMinutes -= 1;
-        document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "SetPause('" + LineId + "', '" + FirstTime + "')");
+        document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "SetPause('" + LineId + "', [" + FirstTime + "])");
         StartCount(LineId, NewHours, NewMinutes);
     }
     else {
@@ -142,37 +139,39 @@ function StartCount(LineId, NewHours, NewMinutes) {
     document.getElementById(LineId).childNodes[2].innerText = NewHours + " heures " + NewMinutes + " minutes";
     window[LineId] = setTimeout(function() {
         StartCount(LineId, NewHours, NewMinutes);
-    }, 100);
+    }, 60000);
 }
 /* Function that ensure the pause of the counting and set a restart option */
 function SetPause(LineId, StartTime) {
     clearTimeout(window[LineId]);
     PauseTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/).map(Number);
-    console.log(PauseTime);
     SetCumulatedTime(LineId, StartTime, PauseTime);
 }
 /* Function that handles the restart an set again a pause option */
 function Restart(LineId) {
     NewHours = parseInt(document.getElementById(LineId).childNodes[2].innerText.match(/\d+/g)[0]);
-    NewMinutes = parseInt(document.getElementById(LineId).childNodes[2].innerText.match(/\d+/g)[1]) - 1;
+    NewMinutes = parseInt(document.getElementById(LineId).childNodes[2].innerText.match(/\d+/g)[1]);
     RestartTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/).map(Number);
-    RestartTime[4] = RestartTime[4] + NewMinutes;
-    if (RestartTime[4] >= 60) {
-        RestartTime[4] = RestartTime[4] - 60;
-        RestartTime[3] += 1;
+    RestartTime[4] = RestartTime[4] - NewMinutes;
+    if (RestartTime[4] < 0) {
+        RestartTime[4] += 60;
+        RestartTime[3] -= 1;
     }
-    RestartTime[3] = RestartTime[3] + NewHours;
-    if (RestartTime[3] >= 24) {
-        RestartTime[3] = RestartTime[3] - 24;
-        RestartTime[2] += 1;
+    RestartTime[3] = RestartTime[3] - NewHours;
+    if (RestartTime[3] < 0) {
+        RestartTime[3] += 24;
+        RestartTime[2] -= 1;
+        if (RestartTime[2] < 0) {
+            if (RestartTime[1] == 1) {
+                RestartTime[1] = 13;
+            }
+            RestartTime[2] += Months[RestartTime[1] - 2];
+            RestartTime[1] -= 1;
+        }
+        if (RestartTime[1] < 0) {
+            RestartTime[1] += 12;
+            RestartTime[0] -= 1;
+        }
     }
-    if (RestartTime[2] > Months[RestartTime[1] - 1]) {
-        RestartTime[2] = RestartTime[2] - Months[RestartTime[1] - 1];
-        RestartTime[1] += 1;
-    }
-    if (RestartTime[1] > 12) {
-        RestartTime[1] = RestartTime[1] - 12;
-        RestartTime[0] += 1;
-    }
-    document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "SetCumulatedTime('" + LineId + "', '" + RestartTime + "')");
+    SetCumulatedTime(LineId, RestartTime);
 }
