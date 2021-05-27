@@ -50,12 +50,12 @@ function AddNewName(event, TableId) {
         document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].innerText = NewName;
         NewTimeInput = document.createElement("input");
         NewTimeInput.setAttribute("type", "datetime-local");
-        NewTimeInput.setAttribute("onblur", "SetCumulatedTime('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "', document.getElementById('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "').childNodes[1].childNodes[0].value)");
+        NewTimeInput.setAttribute("onblur", "SetCumulativeTime('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "', document.getElementById('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "').childNodes[1].childNodes[0].value)");
         document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[1].appendChild(NewTimeInput);
         NewLine = document.createElement("tr");
         NewLine.id = TableId + (document.getElementById(TableId).childNodes[0].childNodes.length);
         document.getElementById(TableId).childNodes[0].appendChild(NewLine);
-        for (x = 0; x < 4; x++) {
+        for (x = 0; x < 5; x++) {
             NewLine.appendChild(document.createElement("td"));
         }
         AddNewButton(TableId);
@@ -71,8 +71,8 @@ function AddNewButton(TableId) {
     NewButton.innerHTML = "+";
     document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].appendChild(NewButton);
 }
-/* Function that sets the already cumulated time considering the beginning set by the user */
-function SetCumulatedTime(LineId, StartTime, SecondTime = 0) {
+/* Function that sets the already cumulative time considering the beginning set by the user */
+function SetCumulativeTime(LineId, StartTime, SecondTime = 0) {
     if (typeof StartTime === "string") {
         var FirstTime = StartTime.split(/[-:T]/).map(Number);
     }
@@ -119,10 +119,12 @@ function SetCumulatedTime(LineId, StartTime, SecondTime = 0) {
         NewYear -= 1;
     }
     NewHours = NewHours + NewDay * 24 + NewMonth * 30 * 24 + NewYear * 365 * 24;
-    document.getElementById(LineId).childNodes[2].innerText = NewHours + " heures " + NewMinutes + " minutes";
+    document.getElementById(LineId).childNodes[3].innerText = NewHours + " heures " + NewMinutes + " minutes";
     if (SecondTime[5] != undefined) {
         NewMinutes -= 1;
         document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "SetPause('" + LineId + "', [" + FirstTime + "])");
+        document.getElementById(LineId).childNodes[2].style.backgroundColor = "#00FF00";
+        document.getElementById(LineId).childNodes[2].innerText = "En cours";
         StartCount(LineId, NewHours, NewMinutes);
     }
     else {
@@ -136,7 +138,7 @@ function StartCount(LineId, NewHours, NewMinutes) {
         NewMinutes = 00;
         NewHours += 1; 
     }
-    document.getElementById(LineId).childNodes[2].innerText = NewHours + " heures " + NewMinutes + " minutes";
+    document.getElementById(LineId).childNodes[3].innerText = NewHours + " heures " + NewMinutes + " minutes";
     window[LineId] = setTimeout(function() {
         StartCount(LineId, NewHours, NewMinutes);
     }, 60000);
@@ -145,12 +147,14 @@ function StartCount(LineId, NewHours, NewMinutes) {
 function SetPause(LineId, StartTime) {
     clearTimeout(window[LineId]);
     PauseTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/).map(Number);
-    SetCumulatedTime(LineId, StartTime, PauseTime);
+    document.getElementById(LineId).childNodes[2].style.backgroundColor = "#FFFF00";
+    document.getElementById(LineId).childNodes[2].innerText = "En pause";
+    SetCumulativeTime(LineId, StartTime, PauseTime);
 }
 /* Function that handles the restart an set again a pause option */
 function Restart(LineId) {
-    NewHours = parseInt(document.getElementById(LineId).childNodes[2].innerText.match(/\d+/g)[0]);
-    NewMinutes = parseInt(document.getElementById(LineId).childNodes[2].innerText.match(/\d+/g)[1]);
+    NewHours = parseInt(document.getElementById(LineId).childNodes[3].innerText.match(/\d+/g)[0]);
+    NewMinutes = parseInt(document.getElementById(LineId).childNodes[3].innerText.match(/\d+/g)[1]);
     RestartTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/).map(Number);
     RestartTime[4] = RestartTime[4] - NewMinutes;
     if (RestartTime[4] < 0) {
@@ -173,5 +177,5 @@ function Restart(LineId) {
             RestartTime[0] -= 1;
         }
     }
-    SetCumulatedTime(LineId, RestartTime);
+    SetCumulativeTime(LineId, RestartTime);
 }
