@@ -68,7 +68,7 @@ function AddNewButton(TableId) {
     NewButton.setAttribute("onclick", "AddInputField('" + TableId + "')");
     NewButton.setAttribute("onmouseover", "Light('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "', '#FFFFFF', '#0099FF')");
     NewButton.setAttribute("onmouseout", "Light('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "', '#000000', '#FFFF96')");
-    NewButton.innerHTML = "+";
+    NewButton.innerText = "+";
     document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].appendChild(NewButton);
 }
 /* Function that sets the already cumulative time considering the beginning set by the user */
@@ -123,11 +123,14 @@ function SetCumulativeTime(LineId, StartTime, SecondTime = 0) {
     if (SecondTime[5] != undefined) {
         NewMinutes -= 1;
         document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "SetPause('" + LineId + "', [" + FirstTime + "])");
-        document.getElementById(LineId).childNodes[2].style.backgroundColor = "#00FF00";
+        document.getElementById(LineId).style.backgroundColor = "#00FF00";
         document.getElementById(LineId).childNodes[2].innerText = "En cours";
         StartCount(LineId, NewHours, NewMinutes);
     }
     else {
+        if ((NewHours >= 24 && LineId.charAt(1) == "2") || (LineId.charAt(1) == "1" && NewHours >= 48)) {
+            document.getElementById(LineId).style.backgroundColor = "#FF0000";
+        }
         document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "Restart('" + LineId + "')");
     }
 }
@@ -138,17 +141,22 @@ function StartCount(LineId, NewHours, NewMinutes) {
         NewMinutes = 00;
         NewHours += 1; 
     }
+    if (NewHours >= 24 && (LineId.charAt(1) == "2" || (LineId.charAt(1) == "1" && NewHours >= 48))) {
+        document.getElementById(LineId).style.backgroundColor = "#FF0000";
+    }
     document.getElementById(LineId).childNodes[3].innerText = NewHours + " heures " + NewMinutes + " minutes";
     window[LineId] = setTimeout(function() {
         StartCount(LineId, NewHours, NewMinutes);
-    }, 60000);
+    }, 10);
 }
 /* Function that ensure the pause of the counting and set a restart option */
 function SetPause(LineId, StartTime) {
     clearTimeout(window[LineId]);
     PauseTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/).map(Number);
-    document.getElementById(LineId).childNodes[2].style.backgroundColor = "#FFFF00";
-    document.getElementById(LineId).childNodes[2].innerText = "En pause";
+    if (document.getElementById(LineId).style.backgroundColor != "#FF0000") {
+        document.getElementById(LineId).style.backgroundColor = "#FFFF00";
+        document.getElementById(LineId).childNodes[2].innerText = "En pause";
+    }
     SetCumulativeTime(LineId, StartTime, PauseTime);
 }
 /* Function that handles the restart an set again a pause option */
