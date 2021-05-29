@@ -50,7 +50,7 @@ function AddNewName(event, TableId) {
         document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].innerText = NewName;
         NewTimeInput = document.createElement("input");
         NewTimeInput.setAttribute("type", "datetime-local");
-        NewTimeInput.setAttribute("onblur", "SetCumulativeTime('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "', document.getElementById('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "').childNodes[1].childNodes[0].value)");
+        NewTimeInput.setAttribute("onblur", "SetCumulativeTime('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "', document.getElementById('" + TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1) + "').childNodes[1].childNodes[0].value.split(/[-:T]/))");
         document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[1].appendChild(NewTimeInput);
         NewLine = document.createElement("tr");
         NewLine.id = TableId + (document.getElementById(TableId).childNodes[0].childNodes.length);
@@ -72,36 +72,23 @@ function AddNewButton(TableId) {
     document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].appendChild(NewButton);
 }
 /* Function that sets the already cumulative time considering the beginning set by the user */
-function SetCumulativeTime(LineId, StartTime, SecondTime = 0) {
-    if (typeof StartTime === "string") {
-        var FirstTime = StartTime.split(/[-:T]/).map(Number);
-    }
-    else {
-        var FirstTime = StartTime;
-    }
+function SetCumulativeTime(LineId, FirstTime, SecondTime = 0) {
     if (SecondTime == 0) {
-        var RightNow = new Date();
-        SecondTime = new Array(6);
-        SecondTime[0] = RightNow.getFullYear();
-        SecondTime[1] = RightNow.getMonth() + 1;
-        SecondTime[2] = RightNow.getDate();
-        SecondTime[3] = RightNow.getHours();
-        SecondTime[4] = RightNow.getMinutes();
-        SecondTime[5] = RightNow.getSeconds();
+        SecondTime = TimeNow();
+        if (TimeConsistency(TimeAdjust(FirstTime), TimeAdjust(SecondTime)) == "No") {
+            alert("Date de début désignée dans le futur Marty ! Choisis-en une autre.");
+            return;
+        }
     }
     if (FirstTime.length == 1) {
         alert("Erreur : pas de date définie");
         return;
     }
-    if ((SecondTime[0] < FirstTime[0]) || (SecondTime[1] < FirstTime[1] && SecondTime[0] <= FirstTime[0]) || (SecondTime[2] < FirstTime[2] && SecondTime[1] <= FirstTime[1] && SecondTime[0] <= FirstTime[0]) || (SecondTime[3] < FirstTime[3] && SecondTime[2] <= FirstTime[2] && SecondTime[1] <= FirstTime[1] && SecondTime[0] <= FirstTime[0]) || (SecondTime[4] < FirstTime[4] && SecondTime[3] <= FirstTime[3] && SecondTime[2] <= FirstTime[2] && SecondTime[1] <= FirstTime[1] && SecondTime[0] <= FirstTime[0])) {
-        alert("Date désignée dans le futur Marty ! Choisis-en une autre.");
-        return;
-    }
-    NewMinutes = SecondTime[4] - FirstTime[4];
-    NewHours = SecondTime[3] - FirstTime[3];
-    NewDay = SecondTime[2] - FirstTime[2];
-    NewMonth = SecondTime[1] - FirstTime[1];
-    NewYear = SecondTime[0] - FirstTime[0];
+    NewMinutes = parseInt(SecondTime[4]) - parseInt(FirstTime[4]);
+    NewHours = parseInt(SecondTime[3]) - parseInt(FirstTime[3]);
+    NewDay = parseInt(SecondTime[2]) - parseInt(FirstTime[2]);
+    NewMonth = parseInt(SecondTime[1]) - parseInt(FirstTime[1]);
+    NewYear = parseInt(SecondTime[0]) - parseInt(FirstTime[0]);
     if (NewMinutes < 0) {
         NewMinutes += 60;
         NewHours -= 1;
@@ -111,7 +98,7 @@ function SetCumulativeTime(LineId, StartTime, SecondTime = 0) {
         NewDay -= 1;
     }
     if (NewDay < 0) {
-        NewDay += Months[FirstTime[1] - 1];
+        NewDay += Months[parseInt(FirstTime[1]) - 1];
         NewMonth -= 1;
     }
     if (NewMonth < 0) {
@@ -128,10 +115,10 @@ function SetCumulativeTime(LineId, StartTime, SecondTime = 0) {
         StartCount(LineId, NewHours, NewMinutes);
     }
     else {
-        if ((NewHours >= 24 && LineId.charAt(1) == "2") || (LineId.charAt(1) == "1" && NewHours >= 48)) {
+        if ((NewHours >= 24 && LineId.charAt(1) == "2") || (NewHours >= 48 && LineId.charAt(1) == "1")) {
             document.getElementById(LineId).style.backgroundColor = "#FF0000";
         }
-        document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "Restart('" + LineId + "')");
+        document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "Restart('" + LineId + "', [" + SecondTime + "])");
     }
 }
 /* Function that ensure the counting */
@@ -141,18 +128,26 @@ function StartCount(LineId, NewHours, NewMinutes) {
         NewMinutes = 00;
         NewHours += 1; 
     }
-    if (NewHours >= 24 && (LineId.charAt(1) == "2" || (LineId.charAt(1) == "1" && NewHours >= 48))) {
+    if ((((NewHours == 24 && NewMinutes > 0) || NewHours > 24) && LineId.charAt(1) == "2") || (((NewHours == 48 && NewMinutes > 0) || NewHours > 48) && LineId.charAt(1) == "1")) {
         document.getElementById(LineId).style.backgroundColor = "#FF0000";
     }
     document.getElementById(LineId).childNodes[3].innerText = NewHours + " heures " + NewMinutes + " minutes";
     window[LineId] = setTimeout(function() {
         StartCount(LineId, NewHours, NewMinutes);
-    }, 10);
+    }, 60000);
 }
 /* Function that ensure the pause of the counting and set a restart option */
 function SetPause(LineId, StartTime) {
+    PauseTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/);
+    if (TimeConsistency(TimeAdjust(StartTime), TimeAdjust(PauseTime)) == "No") {
+        alert("Date de pause désignée avant la date de début Docteur Who ! Choisissez une autre date.");
+        return;
+    }
+    if (TimeConsistency(TimeAdjust(PauseTime), TimeNow()) == "No") {
+        alert("Date de pause désignée dans le futur Marty ! Choisis-en une autre.");
+        return;
+    }
     clearTimeout(window[LineId]);
-    PauseTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/).map(Number);
     if (document.getElementById(LineId).style.backgroundColor != "#FF0000") {
         document.getElementById(LineId).style.backgroundColor = "#FFFF00";
         document.getElementById(LineId).childNodes[2].innerText = "En pause";
@@ -160,30 +155,70 @@ function SetPause(LineId, StartTime) {
     SetCumulativeTime(LineId, StartTime, PauseTime);
 }
 /* Function that handles the restart an set again a pause option */
-function Restart(LineId) {
+function Restart(LineId, PauseTime) {
     NewHours = parseInt(document.getElementById(LineId).childNodes[3].innerText.match(/\d+/g)[0]);
     NewMinutes = parseInt(document.getElementById(LineId).childNodes[3].innerText.match(/\d+/g)[1]);
-    RestartTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/).map(Number);
-    RestartTime[4] = RestartTime[4] - NewMinutes;
-    if (RestartTime[4] < 0) {
-        RestartTime[4] += 60;
-        RestartTime[3] -= 1;
+    RestartTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/);
+    if (TimeConsistency(TimeAdjust(PauseTime), TimeAdjust(RestartTime)) == "No") {
+        alert("Date de reprise désignée avant la date de pause Docteur Who ! Choisissez une autre date.");
+        return;
     }
-    RestartTime[3] = RestartTime[3] - NewHours;
-    if (RestartTime[3] < 0) {
-        RestartTime[3] += 24;
-        RestartTime[2] -= 1;
-        if (RestartTime[2] < 0) {
-            if (RestartTime[1] == 1) {
-                RestartTime[1] = 13;
+    if (TimeConsistency(TimeAdjust(RestartTime), TimeNow()) == "No") {
+        alert("Date de reprise désignée dans le futur Marty ! Choisis-en une autre.");
+        return;
+    }
+    RestartTime[4] = (parseInt(RestartTime[4]) - NewMinutes).toString();
+    if (parseInt(RestartTime[4]) < 0) {
+        RestartTime[4] = parseInt(RestartTime[4]) + 60 < 10 ? "0" + (parseInt(RestartTime[4]) + 60) : (parseInt(RestartTime[4]) + 60).toString();
+        RestartTime[3] = (parseInt(RestartTime[3]) - 1).toString();
+    }
+    RestartTime[3] = (parseInt(RestartTime[3]) - NewHours).toString();
+    if (parseInt(RestartTime[3]) < 0) {
+        RestartTime[3] = parseInt(RestartTime[3]) + 24 < 10 ? "0" + (parseInt(RestartTime[3]) + 24) : (parseInt(RestartTime[3]) + 24).toString();
+        RestartTime[2] = (parseInt(RestartTime[2]) - 1).toString();
+        if (parseInt(RestartTime[2]) < 0) {
+            if (RestartTime[1] == "01") {
+                RestartTime[1] = "13";
             }
-            RestartTime[2] += Months[RestartTime[1] - 2];
-            RestartTime[1] -= 1;
+            RestartTime[2] = parseInt(RestartTime[2]) + Months[RestartTime[1] - 2] < 10 ? "0" + (parseInt(RestartTime[2]) + Months[RestartTime[1] - 2]) : (parseInt(RestartTime[2]) + Months[RestartTime[1] - 2]).toString();
+            RestartTime[1] = (parseInt(RestartTime[1]) - 1).toString();
         }
-        if (RestartTime[1] < 0) {
-            RestartTime[1] += 12;
-            RestartTime[0] -= 1;
+        if (parseInt(RestartTime[1]) < 0) {
+            RestartTime[1] = parseInt(RestartTime[1]) + 12 < 10 ? "0" + (parseInt(RestartTime[1]) + 12) : (parseInt(RestartTime[1]) + 12).toString();
+            RestartTime[0] = (parseInt(RestartTime[0]) - 1).toString();
         }
     }
     SetCumulativeTime(LineId, RestartTime);
+}
+/* Function that check mistakes of wrongly chosen dates */
+function TimeConsistency(FirstTime, SecondTime) {
+    var TempFirstTime = "";
+    var TempSecondTime = "";
+    for (x = 0; x < 5; x++) {
+        TempFirstTime += FirstTime[x];
+        TempSecondTime += SecondTime[x];
+    }
+    if (parseInt(TempFirstTime) > parseInt(TempSecondTime)) {
+        return "No";
+    }
+}
+/* A small function that verify if every dates numbers in the arrays are in the right format */
+function TimeAdjust(Time) {
+    for (x = 0; x < Time.length; x++) {
+        Time[x] = parseInt(Time[x]) < 10 ? "0" + parseInt(Time[x]) : Time[x].toString();
+    }
+    return Time;
+}
+/* A function that is used to check if you're no chosing a date in the future */
+function TimeNow() {
+    var RightNow = new Date();
+    NowTime = new Array(6);
+    NowTime[0] = RightNow.getFullYear();
+    NowTime[1] = RightNow.getMonth() + 1;
+    NowTime[2] = RightNow.getDate();
+    NowTime[3] = RightNow.getHours();
+    NowTime[4] = RightNow.getMinutes();
+    NowTime[5] = RightNow.getSeconds();
+    NowTime = TimeAdjust(NowTime);
+    return NowTime;
 }
