@@ -72,23 +72,25 @@ function AddNewButton(TableId) {
     document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].appendChild(NewButton);
 }
 /* Function that sets the already cumulative time considering the beginning set by the user */
-function SetCumulativeTime(LineId, FirstTime, SecondTime = 0, Column = 0) {
-    if (SecondTime == 0) {
-        SecondTime = TimeNow();
-        if (TimeConsistency(TimeAdjust(FirstTime), TimeAdjust(SecondTime)) == "No") {
+function SetCumulativeTime(LineId, ActualStartTime, CalculatedStartTime = 0, EventTime = 0, Column = 0) {
+    if (EventTime == 0) {
+        var NowTime = TimeNow();
+        if (TimeConsistency(TimeAdjust(ActualStartTime), NowTime) == "No") {
             alert("Date de début désignée dans le futur Marty ! Choisis-en une autre.");
             return;
         }
     }
     if (Column == 0) {
-        SetCumulativeTime(LineId, FirstTime, SecondTime, 3);
-        SetCumulativeTime(LineId, FirstTime, SecondTime, 4);
+        SetCumulativeTime(LineId, ActualStartTime, CalculatedStartTime, EventTime, 3);
+        SetCumulativeTime(LineId, ActualStartTime, CalculatedStartTime, EventTime, 4);
         return;
     }
-    if (FirstTime.length == 1) {
+    if (ActualStartTime.length == 1) {
         alert("Erreur : pas de date définie");
         return;
     }
+    var FirstTime = CalculatedStartTime == 0 ? TimeAdjust(ActualStartTime).slice(0) : TimeAdjust(CalculatedStartTime).slice(0);
+    var SecondTime = EventTime == 0 ? NowTime.slice(0) : TimeAdjust(EventTime).slice(0);
     var NewMinutes = parseInt(SecondTime[4]) - parseInt(FirstTime[4]);
     var NewHours = parseInt(SecondTime[3]) - parseInt(FirstTime[3]);
     var NewDay = parseInt(SecondTime[2]) - parseInt(FirstTime[2]);
@@ -114,13 +116,13 @@ function SetCumulativeTime(LineId, FirstTime, SecondTime = 0, Column = 0) {
     document.getElementById(LineId).childNodes[Column].innerText = NewHours + " heures " + NewMinutes + " minutes";
     if (SecondTime[5] != undefined) {
         NewMinutes -= 1;
-        document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "SetPause('" + LineId + "', [" + FirstTime + "])");
+        document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "SetPause('" + LineId + "', [" + ActualStartTime + "])");
         document.getElementById(LineId).style.backgroundColor = "#00FF00";
         document.getElementById(LineId).childNodes[2].innerText = "En cours";
         StartCount(LineId, NewHours, NewMinutes, Column);
     }
     else {
-        if ((NewHours >= 24 && LineId.charAt(1) == "2") || (NewHours >= 48 && LineId.charAt(1) == "1")) {
+        if ((((NewHours == 24 && NewMinutes > 0) || NewHours > 24) && LineId.charAt(1) == "2") || (((NewHours == 48 && NewMinutes > 0) || NewHours > 48) && LineId.charAt(1) == "1")) {
             document.getElementById(LineId).style.backgroundColor = "#FF0000";
         }
         document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "Restart('" + LineId + "', [" + SecondTime + "])");
@@ -146,6 +148,8 @@ function SetPause(LineId, StartTime) {
     var NewHours = [parseInt(document.getElementById(LineId).childNodes[3].innerText.match(/\d+/g)[0]), parseInt(document.getElementById(LineId).childNodes[4].innerText.match(/\d+/g)[0])];
     var NewMinutes = [parseInt(document.getElementById(LineId).childNodes[3].innerText.match(/\d+/g)[1]), parseInt(document.getElementById(LineId).childNodes[4].innerText.match(/\d+/g)[1])];
     var PauseTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/);
+    StartTime = TimeAdjust(StartTime);
+    PauseTime = TimeAdjust(PauseTime);
     if (TimeConsistency(TimeAdjust(StartTime), TimeAdjust(PauseTime)) == "No") {
         alert("Date de pause désignée avant la date de début Docteur Who ! Choisissez une autre date.");
         return;
@@ -154,11 +158,37 @@ function SetPause(LineId, StartTime) {
         alert("Date de pause désignée dans le futur Marty ! Choisis-en une autre.");
         return;
     }
+    var ActualTime = TimeNow().slice(0);
+    var IntervalTime = new Array(5);
+    for (t = 0; t < 5; t++) {
+        IntervalTime[t] = (parseInt(ActualTime[t]) - parseInt(StartTime[t])).toString();
+    }
+    IntervalTime[3] = (parseInt(IntervalTime[3]) + parseInt(IntervalTime[2]) * 24 + parseInt(IntervalTime[1]) * 30 * 24 + parseInt(IntervalTime[0]) * 365 * 24).toString();
+    for (u = 0; u < 3; u++) {
+        IntervalTime[u] = "00";
+    }
+    IntervalTime = TimeAdjust(IntervalTime);
+    var MaxLoop = 2;
+    var ColumnRange = 3;
+    if (NewHours[0] == NewHours[1] && NewMinutes[0] == NewMinutes[1]) {
+        MaxLoop = 1;
+        ColumnRange = 0;
+    }
     clearTimeout(window[LineId + 3]);
     clearTimeout(window[LineId + 4]);
     if (document.getElementById(LineId).style.backgroundColor != "#FF0000") {
         document.getElementById(LineId).style.backgroundColor = "#FFFF00";
         document.getElementById(LineId).childNodes[2].innerText = "En pause";
+    }
+    for (v = 0; v < MaxLoop; v++) {
+        var TempTime = IntervalTime.slice(0);
+        TempTime[4] = (NewMinutes[v] - parseInt(TempTime[4])).toString();
+        TempTime[3] = (NewHours[v] - parseInt(TempTime[3])).toString();
+        for (w = 0; w < 5; w++) {
+            TempTime[w] = (parseInt(StartTime[w]) - parseInt(TempTime[w])).toString();
+        }
+        TempTime = TimeAdjust(TempTime);
+        SetCumulativeTime(LineId, StartTime, TempTime, PauseTime, v + ColumnRange);
     }
 }
 /* Function that handles the restart an set again a pause option */
@@ -166,6 +196,8 @@ function Restart(LineId, PauseTime) {
     var NewHours = [parseInt(document.getElementById(LineId).childNodes[3].innerText.match(/\d+/g)[0]), parseInt(document.getElementById(LineId).childNodes[4].innerText.match(/\d+/g)[0])];
     var NewMinutes = [parseInt(document.getElementById(LineId).childNodes[3].innerText.match(/\d+/g)[1]), parseInt(document.getElementById(LineId).childNodes[4].innerText.match(/\d+/g)[1])];
     var RestartTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/);
+    PauseTime = TimeAdjust(PauseTime);
+    RestartTime = TimeAdjust(RestartTime);
     if (TimeConsistency(TimeAdjust(PauseTime), TimeAdjust(RestartTime)) == "No") {
         alert("Date de reprise désignée avant la date de pause Docteur Who ! Choisissez une autre date.");
         return;
@@ -178,40 +210,21 @@ function Restart(LineId, PauseTime) {
         NewHours[0] = 0;
         NewMinutes[0] = 0;
     }
-    for (y = 0; y < 2; y++) {
-        TempTime = RestartTime.slice(0);
-        TempTime[4] = (parseInt(TempTime[4]) - NewMinutes[y]).toString();
-        if (parseInt(TempTime[4]) < 0) {
-            TempTime[4] = parseInt(TempTime[4]) + 60 < 10 ? "0" + (parseInt(TempTime[4]) + 60) : (parseInt(TempTime[4]) + 60).toString();
-            TempTime[3] = (parseInt(TempTime[3]) - 1).toString();
-        }
-        TempTime[3] = (parseInt(TempTime[3]) - NewHours[y]).toString();
-        if (parseInt(TempTime[3]) < 0) {
-            TempTime[3] = parseInt(TempTime[3]) + 24 < 10 ? "0" + (parseInt(TempTime[3]) + 24) : (parseInt(TempTime[3]) + 24).toString();
-            TempTime[2] = (parseInt(TempTime[2]) - 1).toString();
-        }
-        if (parseInt(TempTime[2]) < 0) {
-            if (TempTime[1] == "01") {
-                TempTime[1] = "13";
-            }
-            TempTime[2] = parseInt(TempTime[2]) + Months[TempTime[1] - 2] < 10 ? "0" + (parseInt(TempTime[2]) + Months[TempTime[1] - 2]) : (parseInt(TempTime[2]) + Months[TempTime[1] - 2]).toString();
-            TempTime[1] = (parseInt(TempTime[1]) - 1).toString();
-        }
-        if (parseInt(TempTime[1]) < 0) {
-            TempTime[1] = parseInt(TempTime[1]) + 12 < 10 ? "0" + (parseInt(TempTime[1]) + 12) : (parseInt(TempTime[1]) + 12).toString();
-            TempTime[0] = (parseInt(TempTime[0]) - 1).toString();
-        }
+    for (x = 0; x < 2; x++) {
+        var TempTime = RestartTime.slice(0);
+        TempTime[4] = (parseInt(TempTime[4]) - NewMinutes[x]).toString();
+        TempTime[3] = (parseInt(TempTime[3]) - NewHours[x]).toString();
         TempTime = TimeAdjust(TempTime);
-        SetCumulativeTime(LineId, TempTime, 0, y + 3);
+        SetCumulativeTime(LineId, RestartTime, TempTime, 0, x + 3);
     }
 }
 /* Function that check mistakes of wrongly chosen dates */
 function TimeConsistency(FirstTime, SecondTime) {
     var TempFirstTime = "";
     var TempSecondTime = "";
-    for (x = 0; x < 5; x++) {
-        TempFirstTime += FirstTime[x];
-        TempSecondTime += SecondTime[x];
+    for (y = 0; y < 5; y++) {
+        TempFirstTime += FirstTime[y];
+        TempSecondTime += SecondTime[y];
     }
     if (parseInt(TempFirstTime) > parseInt(TempSecondTime)) {
         return "No";
@@ -220,10 +233,31 @@ function TimeConsistency(FirstTime, SecondTime) {
         return "Zero";
     }
 }
-/* A small function that verify if every dates numbers in the arrays are in the right format */
+/* A function that checks if the different elements of the time arrays have correct values and in the right format */
 function TimeAdjust(Time) {
+    if (parseInt(Time[4]) < 0) {
+        var MinutesIncrement = Math.floor(Math.abs(parseInt(Time[4]))/60) + 1;
+        Time[4] = (parseInt(Time[4]) + MinutesIncrement * 60).toString();
+        Time[3] = (parseInt(Time[3]) - MinutesIncrement).toString();
+    }
+    if (parseInt(Time[3]) < 0) {
+        var HoursIncrement = Math.floor(Math.abs(parseInt(Time[3]))/24) + 1;
+        Time[3] = (parseInt(Time[3]) + HoursIncrement * 24).toString();
+        Time[2] = (parseInt(Time[2]) - HoursIncrement).toString();
+    }
+    if (parseInt(Time[2]) < 0) {
+        if (Time[1] == "01") {
+            Time[1] = "13";
+        }
+        Time[2] = (parseInt(Time[2]) + Months[Time[1] - 2]).toString();
+        Time[1] = (parseInt(Time[1]) - 1).toString();
+    }
+    if (parseInt(Time[1]) < 0) {
+        Time[1] = (parseInt(Time[1]) + 12).toString();
+        Time[0] = (parseInt(Time[0]) - 1).toString();
+    }
     for (z = 0; z < Time.length; z++) {
-        Time[z] = parseInt(Time[z]) < 10 ? "0" + parseInt(Time[z]) : Time[z].toString();
+        Time[z] = parseInt(Time[z]) < 10 ? "0" + parseInt(Time[z]) : parseInt(Time[z]).toString();
     }
     return Time;
 }
