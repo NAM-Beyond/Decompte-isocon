@@ -1,27 +1,29 @@
 var Months = [31,28,31,30,31,30,31,31,30,31,30,31];
-if (new Date().getFullYear() % 4 == 0) {Months[1] = 29;}
+if (new Date().getFullYear() % 4 == 0) {
+    Months[1] = 29;
+}
 /* No need to explain that one */
 window.onload = function RemoveFuckingUselessEmptyTextNodes() {
-    for (w = 1; w < 3; w++) {
-        for (x = 0; x < document.getElementById("0" + w).childNodes.length; x ++) {
-            if (document.getElementById("0" + w).childNodes[x].childNodes.length != 0) {
-                for (y = 0; y < document.getElementById("0" + w).childNodes[x].childNodes.length; y++) {
-                    if (document.getElementById("0" + w).childNodes[x].childNodes[y].childNodes.length != 0) {
-                        for (z = 0; z < document.getElementById("0" + w).childNodes[x].childNodes[y].childNodes.length; z++) {
-                            if (document.getElementById("0" + w).childNodes[x].childNodes[y].childNodes[z].nodeName =="#text") {
-                                document.getElementById("0" + w).childNodes[x].childNodes[y].removeChild(document.getElementById("0" + w).childNodes[x].childNodes[y].childNodes[z]);
+    for (z = 1; z < 3; z++) {
+        for (y = 0; y < document.getElementById("0" + z).childNodes.length; y ++) {
+            if (document.getElementById("0" + z).childNodes[y].childNodes.length != 0) {
+                for (x = 0; x < document.getElementById("0" + z).childNodes[y].childNodes.length; x++) {
+                    if (document.getElementById("0" + z).childNodes[y].childNodes[x].childNodes.length != 0) {
+                        for (w = 0; w < document.getElementById("0" + z).childNodes[y].childNodes[x].childNodes.length; w++) {
+                            if (document.getElementById("0" + z).childNodes[y].childNodes[x].childNodes[w].nodeName =="#text") {
+                                document.getElementById("0" + z).childNodes[y].childNodes[x].removeChild(document.getElementById("0" + z).childNodes[y].childNodes[x].childNodes[w]);
                             }
                         }
                     }
                     else {
-                        document.getElementById("0" + w).childNodes[x].removeChild(document.getElementById("0" + w).childNodes[x].childNodes[y]);
-                        y--;
+                        document.getElementById("0" + z).childNodes[y].removeChild(document.getElementById("0" + z).childNodes[y].childNodes[x]);
+                        x--;
                     }
                 }
             }
             else {
-                document.getElementById("0" + w).removeChild(document.getElementById("0" + w).childNodes[x]);
-                x--;
+                document.getElementById("0" + z).removeChild(document.getElementById("0" + z).childNodes[y]);
+                y--;
             }
         }
     }
@@ -42,8 +44,8 @@ function AddInputField(TableId) {
 }
 /* Function of the keyboard event listener, an input is add only if the user press enter and then add a new name, a time start option and then a new line*/
 function AddNewName(event, TableId) {
-    y = event.which || event.keyCode;
-    if (y == 13) {
+    v = event.which || event.keyCode;
+    if (v == 13) {
         document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].childNodes[0].removeAttribute("onblur");
         NewName = document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].childNodes[0].value;
         document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].innerHTML = "";
@@ -55,7 +57,7 @@ function AddNewName(event, TableId) {
         NewLine = document.createElement("tr");
         NewLine.id = TableId + (document.getElementById(TableId).childNodes[0].childNodes.length);
         document.getElementById(TableId).childNodes[0].appendChild(NewLine);
-        for (x = 0; x < 5; x++) {
+        for (u = 0; u < 5; u++) {
             NewLine.appendChild(document.createElement("td"));
         }
         AddNewButton(TableId);
@@ -72,25 +74,31 @@ function AddNewButton(TableId) {
     document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].appendChild(NewButton);
 }
 /* Function that sets the already cumulative time considering the beginning set by the user */
-function SetCumulativeTime(LineId, ActualStartTime, CalculatedStartTime = 0, EventTime = 0, Column = 0) {
+function SetCumulativeTime(LineId, ActualStartTime = 0, CalculatedStartTime = 0, EventTime = 0, Column = 0) {
+    var MaxRange = Column == 3 || Column == 4 ? Column + 1 : Column + 5;
+    Column = Column == 0 ? 3 : Column;
+    if (ActualStartTime == 0) {
+        alert("Erreur : pas de date définie");
+        return;
+    }
     if (EventTime == 0) {
-        var NowTime = TimeNow();
-        if (TimeConsistency(TimeAdjust(ActualStartTime), NowTime) == "No") {
+        EventTime = TimeNow().slice(0);
+        if (TimeConsistency(TimeAdjust(ActualStartTime), TimeAdjust(EventTime)) == "No") {
             alert("Date de début désignée dans le futur Marty ! Choisis-en une autre.");
             return;
         }
     }
-    if (Column == 0) {
-        SetCumulativeTime(LineId, ActualStartTime, CalculatedStartTime, EventTime, 3);
-        SetCumulativeTime(LineId, ActualStartTime, CalculatedStartTime, EventTime, 4);
-        return;
-    }
-    if (ActualStartTime.length == 1) {
-        alert("Erreur : pas de date définie");
-        return;
-    }
+    /* if (function() {
+        for (t = 0; t < MainList.length; t++) {
+            if (NamesList[t][0] == LineId) {
+                return "Exists";
+            }
+        }
+    } != "Exists") {
+        NamesList.push([LineId, ActualStartTime]);
+    };*/
     var FirstTime = CalculatedStartTime == 0 ? TimeAdjust(ActualStartTime).slice(0) : TimeAdjust(CalculatedStartTime).slice(0);
-    var SecondTime = EventTime == 0 ? NowTime.slice(0) : TimeAdjust(EventTime).slice(0);
+    var SecondTime = TimeAdjust(EventTime).slice(0);
     var NewMinutes = parseInt(SecondTime[4]) - parseInt(FirstTime[4]);
     var NewHours = parseInt(SecondTime[3]) - parseInt(FirstTime[3]);
     var NewDay = parseInt(SecondTime[2]) - parseInt(FirstTime[2]);
@@ -113,13 +121,14 @@ function SetCumulativeTime(LineId, ActualStartTime, CalculatedStartTime = 0, Eve
         NewYear -= 1;
     }
     NewHours = NewHours + NewDay * 24 + NewMonth * 30 * 24 + NewYear * 365 * 24;
-    document.getElementById(LineId).childNodes[Column].innerText = NewHours + " heures " + NewMinutes + " minutes";
+    for (t = Column; t < MaxRange; t++) {
+        document.getElementById(LineId).childNodes[t].innerText = NewHours + " heures " + NewMinutes + " minutes";
+    }
     if (SecondTime[5] != undefined) {
-        NewMinutes -= 1;
         document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "SetPause('" + LineId + "', [" + ActualStartTime + "])");
         document.getElementById(LineId).style.backgroundColor = "#00FF00";
         document.getElementById(LineId).childNodes[2].innerText = "En cours";
-        StartCount(LineId, NewHours, NewMinutes, Column);
+        StartCount(LineId, NewHours, NewMinutes, Column, MaxRange);
     }
     else {
         if ((((NewHours == 24 && NewMinutes > 0) || NewHours > 24) && LineId.charAt(1) == "2") || (((NewHours == 48 && NewMinutes > 0) || NewHours > 48) && LineId.charAt(1) == "1")) {
@@ -129,18 +138,20 @@ function SetCumulativeTime(LineId, ActualStartTime, CalculatedStartTime = 0, Eve
     }
 }
 /* Function that ensure the counting */
-function StartCount(LineId, NewHours, NewMinutes, Column) {
-    NewMinutes += 1;
+function StartCount(LineId, NewHours, NewMinutes, Column, MaxRange) {
     if (NewMinutes == 60) {
-        NewMinutes = 00;
+        NewMinutes = 0;
         NewHours += 1; 
     }
     if ((((NewHours == 24 && NewMinutes > 0) || NewHours > 24) && LineId.charAt(1) == "2") || (((NewHours == 48 && NewMinutes > 0) || NewHours > 48) && LineId.charAt(1) == "1")) {
         document.getElementById(LineId).style.backgroundColor = "#FF0000";
     }
-    document.getElementById(LineId).childNodes[Column].innerText = NewHours + " heures " + NewMinutes + " minutes";
+    for (s = Column; s < MaxRange; s++) {
+        document.getElementById(LineId).childNodes[s].innerText = NewHours + " heures " + NewMinutes + " minutes";
+    }
+    NewMinutes += 1;
     window[LineId + Column] = setTimeout(function() {
-        StartCount(LineId, NewHours, NewMinutes, Column);
+        StartCount(LineId, NewHours, NewMinutes, Column, MaxRange);
     }, 60000);
 }
 /* Function that ensure the pause of the counting and set a restart option */
@@ -150,22 +161,28 @@ function SetPause(LineId, StartTime) {
     var PauseTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/);
     StartTime = TimeAdjust(StartTime);
     PauseTime = TimeAdjust(PauseTime);
-    if (TimeConsistency(TimeAdjust(StartTime), TimeAdjust(PauseTime)) == "No") {
+    if (TimeConsistency(StartTime, PauseTime) == "No") {
         alert("Date de pause désignée avant la date de début Docteur Who ! Choisissez une autre date.");
         return;
     }
-    if (TimeConsistency(TimeAdjust(PauseTime), TimeNow()) == "No") {
+    if (TimeConsistency(PauseTime, TimeNow()) == "No") {
         alert("Date de pause désignée dans le futur Marty ! Choisis-en une autre.");
         return;
     }
     var ActualTime = TimeNow().slice(0);
+    clearTimeout(window[LineId + 3]);
+    clearTimeout(window[LineId + 4]);
+    if (document.getElementById(LineId).style.backgroundColor != "#FF0000") {
+        document.getElementById(LineId).style.backgroundColor = "#FFFF00";
+        document.getElementById(LineId).childNodes[2].innerText = "En pause";
+    }
     var IntervalTime = new Array(5);
-    for (t = 0; t < 5; t++) {
-        IntervalTime[t] = (parseInt(ActualTime[t]) - parseInt(StartTime[t])).toString();
+    for (r = 0; r < 5; r++) {
+        IntervalTime[r] = (parseInt(ActualTime[r]) - parseInt(StartTime[r])).toString();
     }
     IntervalTime[3] = (parseInt(IntervalTime[3]) + parseInt(IntervalTime[2]) * 24 + parseInt(IntervalTime[1]) * 30 * 24 + parseInt(IntervalTime[0]) * 365 * 24).toString();
-    for (u = 0; u < 3; u++) {
-        IntervalTime[u] = "00";
+    for (q = 0; q < 3; q++) {
+        IntervalTime[q] = "00";
     }
     IntervalTime = TimeAdjust(IntervalTime);
     var MaxLoop = 2;
@@ -174,21 +191,15 @@ function SetPause(LineId, StartTime) {
         MaxLoop = 1;
         ColumnRange = 0;
     }
-    clearTimeout(window[LineId + 3]);
-    clearTimeout(window[LineId + 4]);
-    if (document.getElementById(LineId).style.backgroundColor != "#FF0000") {
-        document.getElementById(LineId).style.backgroundColor = "#FFFF00";
-        document.getElementById(LineId).childNodes[2].innerText = "En pause";
-    }
-    for (v = 0; v < MaxLoop; v++) {
+    for (p = 0; p < MaxLoop; p++) {
         var TempTime = IntervalTime.slice(0);
-        TempTime[4] = (NewMinutes[v] - parseInt(TempTime[4])).toString();
-        TempTime[3] = (NewHours[v] - parseInt(TempTime[3])).toString();
-        for (w = 0; w < 5; w++) {
-            TempTime[w] = (parseInt(StartTime[w]) - parseInt(TempTime[w])).toString();
+        TempTime[4] = (NewMinutes[p] - parseInt(TempTime[4])).toString();
+        TempTime[3] = (NewHours[p] - parseInt(TempTime[3])).toString();
+        for (o = 0; o < 5; o++) {
+            TempTime[o] = (parseInt(StartTime[o]) - parseInt(TempTime[o])).toString();
         }
         TempTime = TimeAdjust(TempTime);
-        SetCumulativeTime(LineId, StartTime, TempTime, PauseTime, v + ColumnRange);
+        SetCumulativeTime(LineId, StartTime, TempTime, PauseTime, p + ColumnRange);
     }
 }
 /* Function that handles the restart an set again a pause option */
@@ -198,39 +209,42 @@ function Restart(LineId, PauseTime) {
     var RestartTime = document.getElementById(LineId).childNodes[1].childNodes[0].value.split(/[-:T]/);
     PauseTime = TimeAdjust(PauseTime);
     RestartTime = TimeAdjust(RestartTime);
-    if (TimeConsistency(TimeAdjust(PauseTime), TimeAdjust(RestartTime)) == "No") {
+    if (TimeConsistency(PauseTime, RestartTime) == "No") {
         alert("Date de reprise désignée avant la date de pause Docteur Who ! Choisissez une autre date.");
         return;
     }
-    if (TimeConsistency(TimeAdjust(RestartTime), TimeNow()) == "No") {
+    if (TimeConsistency(RestartTime, TimeNow()) == "No") {
         alert("Date de reprise désignée dans le futur Marty ! Choisis-en une autre.");
         return;
     }
-    if (TimeConsistency(TimeAdjust(PauseTime), TimeAdjust(RestartTime)) == "Zero") {
+    if (TimeConsistency(PauseTime, RestartTime) == "Zero") {
         NewHours[0] = 0;
         NewMinutes[0] = 0;
     }
-    for (x = 0; x < 2; x++) {
+    for (n = 0; n < 2; n++) {
         var TempTime = RestartTime.slice(0);
-        TempTime[4] = (parseInt(TempTime[4]) - NewMinutes[x]).toString();
-        TempTime[3] = (parseInt(TempTime[3]) - NewHours[x]).toString();
+        TempTime[4] = (parseInt(TempTime[4]) - NewMinutes[n]).toString();
+        TempTime[3] = (parseInt(TempTime[3]) - NewHours[n]).toString();
         TempTime = TimeAdjust(TempTime);
-        SetCumulativeTime(LineId, RestartTime, TempTime, 0, x + 3);
+        SetCumulativeTime(LineId, RestartTime, TempTime, 0, n + 3);
     }
 }
 /* Function that check mistakes of wrongly chosen dates */
 function TimeConsistency(FirstTime, SecondTime) {
     var TempFirstTime = "";
     var TempSecondTime = "";
-    for (y = 0; y < 5; y++) {
-        TempFirstTime += FirstTime[y];
-        TempSecondTime += SecondTime[y];
+    for (m = 0; m < 5; m++) {
+        TempFirstTime += FirstTime[m];
+        TempSecondTime += SecondTime[m];
     }
     if (parseInt(TempFirstTime) > parseInt(TempSecondTime)) {
         return "No";
     }
     if (parseInt(TempSecondTime) - parseInt(TempFirstTime) > 20000) {
         return "Zero";
+    }
+    if (parseInt(TempSecondTime) - parseInt(TempFirstTime) > 150000) {
+        return "Fifteen";
     }
 }
 /* A function that checks if the different elements of the time arrays have correct values and in the right format */
@@ -256,8 +270,8 @@ function TimeAdjust(Time) {
         Time[1] = (parseInt(Time[1]) + 12).toString();
         Time[0] = (parseInt(Time[0]) - 1).toString();
     }
-    for (z = 0; z < Time.length; z++) {
-        Time[z] = parseInt(Time[z]) < 10 ? "0" + parseInt(Time[z]) : parseInt(Time[z]).toString();
+    for (l = 0; l < Time.length; l++) {
+        Time[l] = parseInt(Time[l]) < 10 ? "0" + parseInt(Time[l]) : parseInt(Time[l]).toString();
     }
     return Time;
 }
