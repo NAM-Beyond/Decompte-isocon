@@ -78,7 +78,7 @@ function AddNewButton(TableId) {
     document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].appendChild(NewButton);
 }
 /* Function that sets the already cumulative time considering the beginning set by the user */
-function SetCumulativeTime(LineId, StartTime = 0, EventTime = 0) {
+function SetCumulativeTime(LineId, StartTime = 0, EventTime = 0, PreviousPauseTime = 0) {
     if (StartTime == 0) {
         alert("Erreur : pas de date définie");
         return;
@@ -87,8 +87,15 @@ function SetCumulativeTime(LineId, StartTime = 0, EventTime = 0) {
     if (EventTime == 0) {
         EventTime = TimeAdjust(TimeNow()).slice(0);
         if (TimeConsistency(StartTime, EventTime) == "Negative") {
-            alert("Date de début désignée dans le futur Marty ! Choisis-en une autre.");
+            alert("Date de début / reprise désignée dans le futur Marty ! Choisis-en une autre.");
             return;
+        }
+        if (PreviousPauseTime != 0) {
+            PreviousPauseTime = TimeAdjust(PreviousPauseTime);
+            if (TimeConsistency(PreviousPauseTime, StartTime) == "Negative") {
+                alert("Date de reprise désignée avant la précédente date de pause Docteur Who ! Choisissez une autre date.");
+                return;
+            }
         }
     }
     else {
@@ -97,32 +104,46 @@ function SetCumulativeTime(LineId, StartTime = 0, EventTime = 0) {
             alert("Date de pause désignée avant la date de départ Docteur Who ! Choisissez une autre date.");
             return;
         }
+        if (TimeConsistency(EventTime, TimeAdjust(TimeNow())) == "Negative") {
+            alert("Date de pause désignée dans le futur Marty ! Choisis-en une autre.");
+            return;
+        }
         clearTimeout(window[LineId]);
     }
-    var Rank = -1;
-    for (var t = 0; t < NamesList.length; t++) {
+    var Ranks = [-1, -1, -1]
+    for (t = 0; t < NamesList.length; t++) {
         if (NamesList[t][0] == LineId) {
-            Rank = t;
+            Ranks[0] = t;
         }
     }
-    if (Rank == -1) {
-        Rank = 0;
+    for (t = 0; t < FirstColumnList.length; t++) {
+        if (FirstColumnList[t][0] == LineId) {
+            Ranks[1] = t;
+        }
+    }
+    for (t = 0; t < SecondColumnList.length; t++) {
+        if (SecondColumnList[t][0] == LineId) {
+            Ranks[2] = t;
+        }
+    }
+    if (Ranks[0] == -1) {
         NamesList.push([LineId, document.getElementById(LineId).childNodes[0].innerText]);
         FirstColumnList.push([LineId, [1, StartTime.slice(0)]]);
         SecondColumnList.push([LineId, [1, StartTime.slice(0)]]);
+        Ranks = [NamesList.length - 1, FirstColumnList.length - 1, SecondColumnList.length - 1];
     }
     else {
-        FirstColumnList[Rank].push(EventTime[5] != undefined ? [1, StartTime.slice(0)] : [2, EventTime.slice(0)]);
-        SecondColumnList[Rank].push(EventTime[5] != undefined ? [1, StartTime.slice(0)] : [2, EventTime.slice(0)]);
+        FirstColumnList[Ranks[1]].push(EventTime[5] != undefined ? [1, StartTime.slice(0)] : [2, EventTime.slice(0)]);
+        SecondColumnList[Ranks[2]].push(EventTime[5] != undefined ? [1, StartTime.slice(0)] : [2, EventTime.slice(0)]);
     }
-    if (FirstColumnList[Rank][FirstColumnList[Rank].length - 1][0] == 1) {
-        if (typeof(FirstColumnList[Rank][FirstColumnList[Rank].length - 2]) != "string" && TimeConsistency(FirstColumnList[Rank][FirstColumnList[Rank].length - 2][1], FirstColumnList[Rank][FirstColumnList[Rank].length - 1][1]) == "Forty-eight") {
-            FirstColumnList[Rank].splice(1, FirstColumnList[Rank].length - 2);
+    if (FirstColumnList[Ranks[1]][FirstColumnList[Ranks[1]].length - 1][0] == 1) {
+        if (typeof(FirstColumnList[Ranks[1]][FirstColumnList[Ranks[1]].length - 2]) != "string" && TimeConsistency(FirstColumnList[Ranks[1]][FirstColumnList[Ranks[1]].length - 2][1], FirstColumnList[Ranks[1]][FirstColumnList[Ranks[1]].length - 1][1]) == "Forty-eight") {
+            FirstColumnList[Ranks[1]].splice(1, FirstColumnList[Ranks[1]].length - 2);
         }
     }
     var CumulatedTime = new Array(2);
-    CumulatedTime[0] = TimeCumulated(FirstColumnList.slice(0), Rank, EventTime[5] != undefined ? EventTime.slice(0) : 0);
-    CumulatedTime[1] = TimeCumulated(SecondColumnList.slice(0), Rank, EventTime[5] != undefined ? EventTime.slice(0) : 0);
+    CumulatedTime[0] = TimeCumulated(FirstColumnList.slice(0), Ranks[1], EventTime[5] != undefined ? EventTime.slice(0) : 0);
+    CumulatedTime[1] = TimeCumulated(SecondColumnList.slice(0), Ranks[2], EventTime[5] != undefined ? EventTime.slice(0) : 0);
     for (s = 0; s < 2; s++) {
         document.getElementById(LineId).childNodes[s + 3].innerText = CumulatedTime[s][3] + " heures " + CumulatedTime[s][4] + " minutes";
     }
@@ -133,47 +154,48 @@ function SetCumulativeTime(LineId, StartTime = 0, EventTime = 0) {
         StartCount(LineId, CumulatedTime);
     }
     else {
-        for (t = 0; t < 2; t++) {
-            if ((((CumulatedTime[t][3] == 24 && CumulatedTime[t][4] > 0) || CumulatedTime[t][3] > 24) && LineId.charAt(1) == "2") || (((CumulatedTime[t][3] == 48 && CumulatedTime[t][4] > 0) || CumulatedTime[t][3] > 48) && LineId.charAt(1) == "1")) {
+        for (r = 0; r < 2; r++) {
+            if ((((CumulatedTime[r][3] == 24 && CumulatedTime[r][4] > 0) || CumulatedTime[r][3] > 24) && LineId.charAt(1) == "2") || (((CumulatedTime[r][3] == 48 && CumulatedTime[r][4] > 0) || CumulatedTime[r][3] > 48) && LineId.charAt(1) == "1")) {
+                console.log("coucou");
                 document.getElementById(LineId).style.backgroundColor = "#FF0000";
             }
+            else {
+                document.getElementById(LineId).style.backgroundColor = "#FFFF00";
+            }
         }
-        if (document.getElementById(LineId).style.backgroundColor != "#FF0000") {
-            document.getElementById(LineId).style.backgroundColor = "#FFFF00";
-            document.getElementById(LineId).childNodes[2].innerText = "En pause";
-        }
-        document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "SetCumulativeTime('" + LineId + "', document.getElementById('" + LineId + "').childNodes[1].childNodes[0].value.split(/[-:T]/))");
+        document.getElementById(LineId).childNodes[2].innerText = "En pause";
+        document.getElementById(LineId).childNodes[1].childNodes[0].setAttribute("onblur", "SetCumulativeTime('" + LineId + "', document.getElementById('" + LineId + "').childNodes[1].childNodes[0].value.split(/[-:T]/), 0, [" + EventTime + "])");
     }
 }
 /* A function that calculates the cumulative time by browsing the appropriate array */
 function TimeCumulated (TimeList, Rank, EventTime = 0) {
     var AddedTime = new Array(5).fill(0);
     var TempTimeList = EventTime != 0 ? [...TimeList[Rank].slice(0), [2, EventTime.slice(0)]] : TimeList[Rank].slice(0);
-    for (r = 1; r < TempTimeList.length; r += 2) {
-        for (q = 0; q < 5; q++) {
-            AddedTime[q] += parseInt(TempTimeList[r + 1][1][q]) - parseInt(TempTimeList[r][1][q]);
+    for (q = 1; q < TempTimeList.length; q += 2) {
+        for (p = 0; p < 5; p++) {
+            AddedTime[p] += parseInt(TempTimeList[q + 1][1][p]) - parseInt(TempTimeList[q][1][p]);
         }
     }
     AddedTime = TimeAdjust(AddedTime);
     AddedTime[3] = (parseInt(AddedTime[3]) + parseInt(AddedTime[2]) * 24 + parseInt(AddedTime[1]) * 30 * 24 + parseInt(AddedTime[0]) * 365 * 24).toString();
     AddedTime[3] = parseInt(AddedTime[3]) < 10 ? "0" + parseInt(AddedTime[3]) : parseInt(AddedTime[3]).toString();
-    for (p = 0; p < 3; p++) {
-        AddedTime[p] = "00";
+    for (o = 0; o < 3; o++) {
+        AddedTime[o] = "00";
     }
     return AddedTime;
 }
 /* Function that ensure the counting */
 function StartCount(LineId, CumulatedTime) {
-    for (o = 0; o < 2; o++) {
-        if (parseInt(CumulatedTime[o][4]) == 60) {
-            CumulatedTime[o][4] = 0;
-            CumulatedTime[o][3] = parseInt(CumulatedTime[o][3]) + 1;
+    for (n = 0; n < 2; n++) {
+        if (parseInt(CumulatedTime[n][4]) == 60) {
+            CumulatedTime[n][4] = 0;
+            CumulatedTime[n][3] = parseInt(CumulatedTime[n][3]) + 1;
         }
-        if ((((parseInt(CumulatedTime[o][3]) == 24 && parseInt(CumulatedTime[o][4]) > 0) || parseInt(CumulatedTime[o][3]) > 24) && LineId.charAt(1) == "2") || (((parseInt(CumulatedTime[o][3]) == 48 && parseInt(CumulatedTime[o][4]) > 0) || parseInt(CumulatedTime[o][3]) > 48) && LineId.charAt(1) == "1")) {
+        if ((((parseInt(CumulatedTime[n][3]) == 24 && parseInt(CumulatedTime[n][4]) > 0) || parseInt(CumulatedTime[n][3]) > 24) && LineId.charAt(1) == "2") || (((parseInt(CumulatedTime[n][3]) == 48 && parseInt(CumulatedTime[n][4]) > 0) || parseInt(CumulatedTime[n][3]) > 48) && LineId.charAt(1) == "1")) {
             document.getElementById(LineId).style.backgroundColor = "#FF0000";
         }
-        document.getElementById(LineId).childNodes[o + 3].innerText = (parseInt(CumulatedTime[o][3]) < 10 ? "0" + parseInt(CumulatedTime[o][3]) : parseInt(CumulatedTime[o][3])) + " heures " + (parseInt(CumulatedTime[o][4]) < 10 ? "0" + parseInt(CumulatedTime[o][4]) : parseInt(CumulatedTime[o][4])) + " minutes";
-        CumulatedTime[o][4] = parseInt(CumulatedTime[o][4]) + 1;
+        document.getElementById(LineId).childNodes[n + 3].innerText = (parseInt(CumulatedTime[n][3]) < 10 ? "0" + parseInt(CumulatedTime[n][3]) : parseInt(CumulatedTime[n][3])) + " heures " + (parseInt(CumulatedTime[n][4]) < 10 ? "0" + parseInt(CumulatedTime[n][4]) : parseInt(CumulatedTime[n][4])) + " minutes";
+        CumulatedTime[n][4] = parseInt(CumulatedTime[n][4]) + 1;
     }
     window[LineId] = setTimeout(function() {
         StartCount(LineId, CumulatedTime);
@@ -183,9 +205,9 @@ function StartCount(LineId, CumulatedTime) {
 function TimeConsistency(FirstTime, SecondTime) {
     var TempFirstTime = "";
     var TempSecondTime = "";
-    for (l = 0; l < 5; l++) {
-        TempFirstTime += FirstTime[l];
-        TempSecondTime += SecondTime[l];
+    for (m = 0; m < 5; m++) {
+        TempFirstTime += FirstTime[m];
+        TempSecondTime += SecondTime[m];
     }
     if (parseInt(TempFirstTime) > parseInt(TempSecondTime)) {
         return "Negative";
@@ -220,8 +242,8 @@ function TimeAdjust(Time) {
         Time[1] = (parseInt(Time[1]) + 12).toString();
         Time[0] = (parseInt(Time[0]) - 1).toString();
     }
-    for (k = 0; k < Time.length; k++) {
-        Time[k] = parseInt(Time[k]) < 10 ? "0" + parseInt(Time[k]) : parseInt(Time[k]).toString();
+    for (l = 0; l < Time.length; l++) {
+        Time[l] = parseInt(Time[l]) < 10 ? "0" + parseInt(Time[l]) : parseInt(Time[l]).toString();
     }
     return Time;
 }
