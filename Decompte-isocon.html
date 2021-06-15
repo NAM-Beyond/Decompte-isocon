@@ -7,9 +7,8 @@
     <script type="text/javascript" src="Decompte-isocon.js"></script>
   </head>
   <body>
-    <header id="Title">Décompte Isolement et Contentions</header>
-    &nbsp;
-    &nbsp;
+    <header id="Title">Décompte Isolements</header>
+    <br>
     <table id="01">
       <tr>
         <td>Nom du patient</td>
@@ -19,7 +18,7 @@
         <td>Temps cumulé d'isolement sur 15 jours</td>
       </tr>
       <tr id="011">
-        <td><button onclick="AddInputField('01')" onmouseover="Light('011', '#FFFFFF', '#0099FF')" onmouseout="Light('011', '#000000', '#FFFF96')">+</button></td>
+        <td><button id="button011" onclick="AddInputField('01')" onmouseover="Light('button011', '#FFFFFF', '#0099FF')" onmouseout="Light('button011', '#000000', '#FFFF96')">+</button></td>
         <td></td>
         <td></td>
         <td></td>
@@ -27,6 +26,8 @@
       </tr>
     </table>
     <br>
+    <br>
+    <header id="Title">Décompte Contentions</header>
     <br>
     <table id="02">
       <tr>
@@ -37,7 +38,7 @@
         <td>Temps cumulé de la contention sur 15 jours</td>
       </tr>
       <tr id="021">
-        <td><button onclick="AddInputField('02')" onmouseover="Light('021', '#FFFFFF', '#0099FF')" onmouseout="Light('021', '#000000', '#FFFF96')">+</button></td>
+        <td><button id="button021" onclick="AddInputField('02')" onmouseover="Light('button021', '#FFFFFF', '#0099FF')" onmouseout="Light('button021', '#000000', '#FFFF96')">+</button></td>
         <td></td>
         <td></td>
         <td></td>
@@ -46,17 +47,26 @@
     </table>
     <br>
     <br>
-    <button>Sauvegarder</button>
-    <button>Charger</button>
+    <button id="Save" onmouseover="Light('Save', '#FFFFFF', '#0099FF')" onmouseout="Light('Save', '#000000', '#FFFF96')">Sauvegarder</button>
+    <button id="Load" onmouseover="Light('Load', '#FFFFFF', '#0099FF')" onmouseout="Light('Load', '#000000', '#FFFF96')">Charger</button>
     <br>
     <br>
-    <footer>
       <p><b>Mode d'emploi</b></p>
-      - Cliquez sur un des deux boutons afin d'ajouter le nom d'un patient<br>
-      - Appuyez sur la touche Entrée pour valider l'entrée. Si vous voulez annuler la saisie, cliquez en dehors de la boîte de saisie<br>
-      - Un champ de saisie de date et heure apparaîtra. Une fois déterminés, cliquez à l'extérieur de la boîte, 2 fois (1er clique fermeture de la boîte, 2ème validation de la saisie)<br>
-      - Déclenchement du chronomètre et apparition d'un bouton pause à côté du champ de sélection de la date<br>
-      - Pour mettre en pause, cliquez sur le bouton pause qui se changera en bouton de lecture (de reprise du décompte)<br>
-    </footer>
+      - Cliquez sur un bouton de la première colonne afin d'ajouter le nom d'un patient, un champ d'entrée de texte apparaîtra<br>
+      - Appuyez sur la touche Entrée pour valider l'entrée. Si vous voulez annuler la saisie, cliquez en dehors du champ de saisie<br>
+      - Un champ de saisie de date et heure apparaîtra dans la 2ème colonne. Une fois  la date déterminée, cliquez à l'extérieur de la boîte, 2 fois (1er clique fermeture de la boîte, 2ème validation de la saisie)<br>
+      - Déclenchement du chronomètre et apparition de la mesure l'état de la mesure dans la 3ème colonne afin de savoir si on est en cours ou en pause<br>
+      - Pour mettre en pause, il suffit de définir une nouvelle date dans la 2ème colonne et de cliquer 2 fois à l'extérieur<br>
+      - Couleur <b style="background-color: #00FF00;">verte</b> en arrière plan = mesure en cours, chronomètre actif<br>
+      - Couleur <b style="background-color: #FFFF00;">jaune</b> en arrière plan = mesure en pause, chronomètre arrêté<br>
+      - Couleur <b style="background-color: #FF0000;">rouge</b> en arrière plan = délai autorisé dépassé, il faut solliciter le JLD<br>
+      - La 4ème colonne indique le temps cumulé de la mesure actuelle (avec prise en compte de la remise à zéro en cas de délai &gt; 48 heures entre la mesure précédente et la mesure actuelle)<br>
+      - La 5ème colonne indique le temps cumulé sur un intervalle glissant de 15 jours<br>
+      <br>
+      <br>
+      <footer>
+        &copy; Nicolas Bonnet under a GNU General Public License (v3.0)<br>
+        Contact : n.bonnet@hotmail.fr
+      </footer>
   </body>
 </html>
