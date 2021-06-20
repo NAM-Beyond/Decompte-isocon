@@ -78,22 +78,26 @@ function AddNewButton(TableId) {
     document.getElementById(TableId + (document.getElementById(TableId).childNodes[0].childNodes.length - 1)).childNodes[0].appendChild(NewButton);
 }
 /* Function that sets the already cumulative time considering the beginning set by the user */
-function SetCumulativeTime(LineId, StartTime = 0, EventTime = 0, PreviousPauseTime = 0) {
+function SetCumulativeTime(LineId, StartTime = 0, EventTime = 0, PreviousTime = 0) {
     if (StartTime == 0) {
         alert("Erreur : pas de date définie");
         return;
     }
     StartTime = TimeAdjust(StartTime);
     if (EventTime == 0) {
-        EventTime = TimeAdjust(TimeNow()).slice(0);
+        EventTime = TimeAdjust(TimeNow());
         if (TimeConsistency(StartTime, EventTime) == "Negative") {
             alert("Date de début / reprise désignée dans le futur Marty ! Choisis-en une autre.");
             return;
         }
-        if (PreviousPauseTime != 0) {
-            PreviousPauseTime = TimeAdjust(PreviousPauseTime);
-            if (TimeConsistency(PreviousPauseTime, StartTime) == "Negative") {
+        if (PreviousTime != 0) {
+            PreviousTime = TimeAdjust(PreviousTime);
+            if (TimeConsistency(PreviousTime, StartTime) == "Negative") {
                 alert("Date de reprise désignée avant la précédente date de pause Docteur Who ! Choisissez une autre date.");
+                return;
+            }
+            if (TimeConsistency(PreviousTime, StartTime) == "Equal") {
+                alert("Tu viens de définir la même date deux fois. Choisis à nouveau.");
                 return;
             }
         }
@@ -108,6 +112,10 @@ function SetCumulativeTime(LineId, StartTime = 0, EventTime = 0, PreviousPauseTi
             alert("Date de pause désignée dans le futur Marty ! Choisis-en une autre.");
             return;
         }
+        if (TimeConsistency(StartTime, EventTime) == "Equal") {
+            alert("Tu viens de définir la même date deux fois. Choisis à nouveau.");
+            return;
+        }
         clearTimeout(window[LineId]);
     }
     var Ranks = [-1, -1, -1]
@@ -116,34 +124,37 @@ function SetCumulativeTime(LineId, StartTime = 0, EventTime = 0, PreviousPauseTi
             Ranks[0] = t;
         }
     }
-    for (t = 0; t < FirstColumnList.length; t++) {
-        if (FirstColumnList[t][0] == LineId) {
-            Ranks[1] = t;
+    for (s = 0; s < FirstColumnList.length; s++) {
+        if (FirstColumnList[s][0] == LineId) {
+            Ranks[1] = s;
         }
     }
-    for (t = 0; t < SecondColumnList.length; t++) {
-        if (SecondColumnList[t][0] == LineId) {
-            Ranks[2] = t;
+    for (r = 0; r < SecondColumnList.length; r++) {
+        if (SecondColumnList[r][0] == LineId) {
+            Ranks[2] = r;
         }
     }
     if (Ranks[0] == -1) {
         NamesList.push([LineId, document.getElementById(LineId).childNodes[0].innerText]);
-        FirstColumnList.push([LineId, [1, StartTime.slice(0)]]);
-        SecondColumnList.push([LineId, [1, StartTime.slice(0)]]);
+        FirstColumnList.push([LineId, [1, StartTime]]);
+        SecondColumnList.push([LineId, [1, StartTime]]);
         Ranks = [NamesList.length - 1, FirstColumnList.length - 1, SecondColumnList.length - 1];
     }
     else {
-        FirstColumnList[Ranks[1]].push(EventTime[5] != undefined ? [1, StartTime.slice(0)] : [2, EventTime.slice(0)]);
-        SecondColumnList[Ranks[2]].push(EventTime[5] != undefined ? [1, StartTime.slice(0)] : [2, EventTime.slice(0)]);
+        FirstColumnList[Ranks[1]].push(EventTime[5] != undefined ? [1, StartTime] : [2, EventTime]);
+        SecondColumnList[Ranks[2]].push(EventTime[5] != undefined ? [1, StartTime] : [2, EventTime]);
     }
     if (FirstColumnList[Ranks[1]][FirstColumnList[Ranks[1]].length - 1][0] == 1) {
         if (typeof(FirstColumnList[Ranks[1]][FirstColumnList[Ranks[1]].length - 2]) != "string" && TimeConsistency(FirstColumnList[Ranks[1]][FirstColumnList[Ranks[1]].length - 2][1], FirstColumnList[Ranks[1]][FirstColumnList[Ranks[1]].length - 1][1]) == "Forty-eight") {
             FirstColumnList[Ranks[1]].splice(1, FirstColumnList[Ranks[1]].length - 2);
         }
     }
+    while (TimeConsistency(SecondColumnList[Ranks[2]][1][1], TimeAdjust(TimeNow())) == "Fifteen") {
+        SecondColumnList[Ranks[2]].splice(1,1);
+    }
     var CumulatedTime = new Array(2);
-    CumulatedTime[0] = TimeCumulated(FirstColumnList.slice(0), Ranks[1], EventTime[5] != undefined ? EventTime.slice(0) : 0);
-    CumulatedTime[1] = TimeCumulated(SecondColumnList.slice(0), Ranks[2], EventTime[5] != undefined ? EventTime.slice(0) : 0);
+    CumulatedTime[0] = TimeCumulated(FirstColumnList, Ranks[1], EventTime[5] != undefined ? EventTime : 0);
+    CumulatedTime[1] = TimeCumulated(SecondColumnList, Ranks[2], EventTime[5] != undefined ? EventTime : 0);
     for (s = 0; s < 2; s++) {
         document.getElementById(LineId).childNodes[s + 3].innerText = CumulatedTime[s][3] + " heures " + CumulatedTime[s][4] + " minutes";
     }
@@ -156,7 +167,6 @@ function SetCumulativeTime(LineId, StartTime = 0, EventTime = 0, PreviousPauseTi
     else {
         for (r = 0; r < 2; r++) {
             if ((((CumulatedTime[r][3] == 24 && CumulatedTime[r][4] > 0) || CumulatedTime[r][3] > 24) && LineId.charAt(1) == "2") || (((CumulatedTime[r][3] == 48 && CumulatedTime[r][4] > 0) || CumulatedTime[r][3] > 48) && LineId.charAt(1) == "1")) {
-                console.log("coucou");
                 document.getElementById(LineId).style.backgroundColor = "#FF0000";
             }
             else {
@@ -170,13 +180,13 @@ function SetCumulativeTime(LineId, StartTime = 0, EventTime = 0, PreviousPauseTi
 /* A function that calculates the cumulative time by browsing the appropriate array */
 function TimeCumulated (TimeList, Rank, EventTime = 0) {
     var AddedTime = new Array(5).fill(0);
-    var TempTimeList = EventTime != 0 ? [...TimeList[Rank].slice(0), [2, EventTime.slice(0)]] : TimeList[Rank].slice(0);
+    var TempTimeList = EventTime != 0 ? [...TimeList[Rank], [2, EventTime]] : TimeList[Rank];
     for (q = 1; q < TempTimeList.length; q += 2) {
         for (p = 0; p < 5; p++) {
             AddedTime[p] += parseInt(TempTimeList[q + 1][1][p]) - parseInt(TempTimeList[q][1][p]);
         }
     }
-    AddedTime = TimeAdjust(AddedTime);
+    AddedTime = TimeAdjust(AddedTime, parseInt(TempTimeList[TempTimeList.length - 2][1][1]));
     AddedTime[3] = (parseInt(AddedTime[3]) + parseInt(AddedTime[2]) * 24 + parseInt(AddedTime[1]) * 30 * 24 + parseInt(AddedTime[0]) * 365 * 24).toString();
     AddedTime[3] = parseInt(AddedTime[3]) < 10 ? "0" + parseInt(AddedTime[3]) : parseInt(AddedTime[3]).toString();
     for (o = 0; o < 3; o++) {
@@ -209,18 +219,21 @@ function TimeConsistency(FirstTime, SecondTime) {
         TempFirstTime += FirstTime[m];
         TempSecondTime += SecondTime[m];
     }
+    if (parseInt(TempSecondTime) == parseInt(TempFirstTime)) {
+        return "Equal";
+    }
     if (parseInt(TempFirstTime) > parseInt(TempSecondTime)) {
         return "Negative";
-    }
-    if (parseInt(TempSecondTime) - parseInt(TempFirstTime) > 20000) {
-        return "Forty-eight";
     }
     if (parseInt(TempSecondTime) - parseInt(TempFirstTime) > 150000) {
         return "Fifteen";
     }
+    if (parseInt(TempSecondTime) - parseInt(TempFirstTime) > 20000) {
+        return "Forty-eight";
+    }
 }
 /* A function that checks if the different elements of the time arrays have correct values and in the right format */
-function TimeAdjust(Time) {
+function TimeAdjust(Time, MonthCorrection = 0) {
     if (parseInt(Time[4]) < 0) {
         var MinutesIncrement = Math.floor(Math.abs(parseInt(Time[4]))/60) + 1;
         Time[4] = (parseInt(Time[4]) + MinutesIncrement * 60).toString();
@@ -232,10 +245,10 @@ function TimeAdjust(Time) {
         Time[2] = (parseInt(Time[2]) - HoursIncrement).toString();
     }
     if (parseInt(Time[2]) < 0) {
-        if (Time[1] == "00") {
-            Time[1] = "13";
+        if ((parseInt(Time[1]) == 0 || parseInt(Time[1]) == 1) && MonthCorrection == 0) {
+            Time[1] = (13 + parseInt(Time[1]));
         }
-        Time[2] = (parseInt(Time[2]) + Months[parseInt(Time[1]) - 2]).toString();
+        Time[2] = (parseInt(Time[2]) + (MonthCorrection == 0 ? Months[parseInt(Time[1]) - 2] : Months[parseInt(MonthCorrection) - 1])).toString();
         Time[1] = (parseInt(Time[1]) - 1).toString();
     }
     if (parseInt(Time[1]) < 0) {
