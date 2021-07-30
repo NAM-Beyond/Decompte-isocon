@@ -8,8 +8,6 @@ The law is extremely complex and ask the psychiatrists and the nurses in psychia
 
 This is why I decided to develop the simple tool that use several stopwatches to help me during my work and if possible other psychiatrists in France.
 
-
-
 It is as simple as it seems and works in a few steps :
 
 1 : Click on a button labeled with a "+"
