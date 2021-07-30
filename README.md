@@ -13,5 +13,7 @@ This is why I decided to develop the simple tool that use several stopwatches to
 It is as simple as it seems and works in a few steps :
 
 1 : Click on a button labeled with a "+"
+
 2 : Enter the name of a patient you have decided to isolate and / or psychally restraint.
+
 3 :
